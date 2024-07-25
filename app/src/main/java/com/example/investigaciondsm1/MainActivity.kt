@@ -1,59 +1,99 @@
 package com.example.investigaciondsm1
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
+import android.os.Handler
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
-import com.example.investigaciondsm1.databinding.ActivityMainBinding
+import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var taskList: MutableList<Task>
+    private lateinit var taskAdapter: TaskAdapter
+    private lateinit var dbHelper: TaskDatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        dbHelper = TaskDatabaseHelper(this)
 
-        setSupportActionBar(binding.toolbar)
+        taskList = mutableListOf()
+        taskAdapter = TaskAdapter(taskList, this::deleteTask, this::toggleTaskCompletion)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
+        findViewById<RecyclerView>(R.id.recyclerViewTasks).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = taskAdapter
+        }
 
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
+        findViewById<FloatingActionButton>(R.id.fabAddTask).setOnClickListener {
+            showAddTaskDialog()
+        }
+
+        loadTasks()
+    }
+
+    private fun showAddTaskDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null)
+        val taskDescriptionEditText = dialogView.findViewById<EditText>(R.id.etTaskDescription)
+
+        AlertDialog.Builder(this)
+            .setTitle("Nueva Tarea")
+            .setView(dialogView)
+            .setPositiveButton("Agregar") { _, _ ->
+                val taskDescription = taskDescriptionEditText.text.toString()
+                if (taskDescription.isNotEmpty()) {
+                    val newTask = Task(description = taskDescription, isCompleted = false)
+                    dbHelper.addTask(newTask)
+                    taskList.add(newTask)
+                    taskAdapter.notifyItemInserted(taskList.size - 1)
+                    toggleNoTasksMessage()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+            .show()
+    }
+
+    private fun loadTasks() {
+        taskList.clear()
+        taskList.addAll(dbHelper.getTasks())
+        taskAdapter.notifyDataSetChanged()
+        toggleNoTasksMessage()
+    }
+
+    private fun toggleNoTasksMessage() {
+        val noTasksMessage = findViewById<TextView>(R.id.tvNoTasks)
+        if (taskList.isEmpty()) {
+            noTasksMessage.visibility = View.VISIBLE
+        } else {
+            noTasksMessage.visibility = View.GONE
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+    private fun deleteTask(task: Task) {
+        dbHelper.deleteTask(task)
+        val position = taskList.indexOf(task)
+        taskList.remove(task)
+        taskAdapter.notifyItemRemoved(position)
+        toggleNoTasksMessage()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+    private fun toggleTaskCompletion(task: Task) {
+        // Actualiza el estado de la tarea en la base de datos
+        dbHelper.updateTask(task)
+
+        // Usa un Handler para postergar la actualización del adaptador
+        val handler = Handler(mainLooper)
+        handler.post {
+            taskAdapter.notifyDataSetChanged()
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
-    }
 }
