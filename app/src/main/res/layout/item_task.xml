@@ -12,16 +12,22 @@
 
     <TextView
         android:id="@+id/tvTaskDescription"
-        android:layout_width="0dp"
+        android:layout_width="287dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:padding="8dp"
         android:text="Task Description"
-        android:textSize="16sp"
-        android:padding="8dp" />
+        android:textSize="16sp" />
+
+    <ImageView
+        android:id="@+id/ivEditTask"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/baseline_edit_24" />
 
     <ImageView
         android:id="@+id/ivDeleteTask"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@android:drawable/ic_delete" />
+        android:src="@drawable/baseline_delete_24" />
 </LinearLayout>

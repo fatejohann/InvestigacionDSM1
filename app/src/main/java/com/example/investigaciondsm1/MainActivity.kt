@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         dbHelper = TaskDatabaseHelper(this)
 
         taskList = mutableListOf()
-        taskAdapter = TaskAdapter(taskList, this::deleteTask, this::toggleTaskCompletion)
+        taskAdapter = TaskAdapter(taskList, this::deleteTask, this::toggleTaskCompletion, this::editTask)
 
         findViewById<RecyclerView>(R.id.recyclerViewTasks).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
@@ -54,6 +54,27 @@ class MainActivity : AppCompatActivity() {
                     taskList.add(newTask)
                     taskAdapter.notifyItemInserted(taskList.size - 1)
                     toggleNoTasksMessage()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+            .show()
+    }
+
+    private fun showEditTaskDialog(task: Task) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null)
+        val taskDescriptionEditText = dialogView.findViewById<EditText>(R.id.etTaskDescription)
+        taskDescriptionEditText.setText(task.description)
+
+        AlertDialog.Builder(this)
+            .setTitle("Editar Tarea")
+            .setView(dialogView)
+            .setPositiveButton("Guardar") { _, _ ->
+                val updatedDescription = taskDescriptionEditText.text.toString()
+                if (updatedDescription.isNotEmpty()) {
+                    task.description = updatedDescription
+                    dbHelper.updateTask(task)
+                    taskAdapter.notifyDataSetChanged()
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -96,4 +117,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun editTask(task: Task) {
+        showEditTaskDialog(task)
+    }
 }
