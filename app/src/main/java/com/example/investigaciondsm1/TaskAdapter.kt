@@ -11,7 +11,8 @@ import androidx.recyclerview.widget.RecyclerView
 class TaskAdapter(
     private val tasks: List<Task>,
     private val deleteTask: (Task) -> Unit,
-    private val toggleTaskCompletion: (Task) -> Unit
+    private val toggleTaskCompletion: (Task) -> Unit,
+    private val editTask: (Task) -> Unit // Agregado
 ) : RecyclerView.Adapter<TaskAdapter.TaskViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
@@ -30,20 +31,24 @@ class TaskAdapter(
     inner class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val cbTaskCompleted: CheckBox = itemView.findViewById(R.id.cbTaskCompleted)
         private val tvTaskDescription: TextView = itemView.findViewById(R.id.tvTaskDescription)
+        private val ivEditTask: ImageView = itemView.findViewById(R.id.ivEditTask)
         private val ivDeleteTask: ImageView = itemView.findViewById(R.id.ivDeleteTask)
 
         init {
             cbTaskCompleted.setOnCheckedChangeListener { _, isChecked ->
                 val task = tasks[adapterPosition]
-                // Asegúrate de actualizar el estado en el modelo
                 task.isCompleted = isChecked
-                // Llama al método para manejar el cambio de estado
                 toggleTaskCompletion(task)
             }
 
             ivDeleteTask.setOnClickListener {
                 val task = tasks[adapterPosition]
                 deleteTask(task)
+            }
+
+            ivEditTask.setOnClickListener {
+                val task = tasks[adapterPosition]
+                editTask(task)
             }
         }
 
